@@ -9,9 +9,9 @@ __pycache__/
 *.so
 
 #csv
-.csv
+*.csv
 /all
-.gz
+*.gz
 
 # Distribution / packaging
 .Python

@@ -61,7 +61,6 @@ garage=df[["GarageType","GarageYrBlt","GarageFinish","GarageQual","GarageCond"]]
 
 garage.GarageType.unique()
 
-
 # **Some useful functions:**
 #
 # df.dropna(thresh=5)
@@ -72,8 +71,11 @@ garage.GarageType.unique()
 
 # Sunanda's Correlation matrix:
 import seaborn as sns
-cmap = cmap=sns.diverging_palette(5, 250, as_cmap=True)
+from matplotlib import pyplot as plt
+# cmap = cmap=sns.diverging_palette(5, 250, as_cmap=True)
 corr = df.corr()
+f, ax=plt.subplots(figsize=(16,12))
+sns.heatmap(corr)
 
 def magnify():
     return [dict(selector="th",
@@ -86,6 +88,6 @@ def magnify():
                 props=[('max-width', '200px'),
                        ('font-size', '12pt')])]
 
-corr.style.background_gradient(cmap, axis=1).set_properties(**{'max-width': '50px', 'font-size': '8pt'})\
-.set_precision(2)#.set_table_styles(magnify())
+corr.style.background_gradient(cmap, axis=1).set_properties(**{'max-width': '10px', 'font-size': '8pt'}).set_precision(2)
+#.set_table_styles(magnify())
 #.set_caption("Hover to magify")
