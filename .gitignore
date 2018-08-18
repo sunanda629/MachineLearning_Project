@@ -7,8 +7,8 @@ __pycache__/
 *.so
 
 #csv
-.csv
-/all
+*.csv
+all/
 .gz
 .DS_Store
 
