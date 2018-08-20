@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 df=pd.read_csv('all/train.csv')
-
+df.columns
 ##### For when we want to combine datasets like in the kaggle workflow
 # train_df = pd.read_csv('all/train.csv')
 # test_df = pd.read_csv('all/test.csv')
@@ -39,7 +39,7 @@ for col in ord_cols:
 df.shape
 n,p=df.shape
 n/p
-df.loc[df.Heating.isnull()]
+# df.loc[df.Heating.isnull()]
 # %% Imputing LotFrontage
 
 dfF=df[[ 'LotFrontage', 'LotArea', 'LotConfig', 'LotShape']]
@@ -48,15 +48,15 @@ train=dfF.loc[dfF.LotFrontage.isnull()==False]
 test=dfF.loc[dfF.LotFrontage.isnull()==True]
 test=test.drop('LotFrontage',axis=1)
 
-train2.sample(10)
+train.sample(10)
 n,p=df.shape
 n/p # good shape for dummification
 # %%
 from sklearn.linear_model import LinearRegression
 ols = LinearRegression()
-X=train2.drop('LotFrontage',axis=1)
+X=train.drop('LotFrontage',axis=1)
 X=X.astype(float)
-Y=train2.LotFrontage.astype(float)
+Y=train.LotFrontage.astype(float)
 print(X.shape,Y.shape)
 ols.fit(X, Y)
 y_predict = ols.predict(test)
@@ -77,6 +77,31 @@ dfS=df[['SalePrice','Heating','HeatingQC', 'CentralAir', 'Electrical', '1stFlrSF
 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'KitchenQual', \
 'TotRmsAbvGrd', 'Functional', 'Fireplaces', 'FireplaceQu']]
 
+dfS[['GrLivArea','1stFlrSF']].corr()
+dfS.GrLivArea.value_counts()
+dfS[['GrLivArea','2ndFlrSF']].corr()
+
+dfS.BsmtHalfBath.value_counts()
+# Wonder if the Bsmt bathrooms parameters covary with BsmtCond or BsmtFinType1
+
+# %% Heating Variables
+from LabelClass import LabelCountEncoder
+lce = LabelCountEncoder()
+dfS['Heating'] = lce.fit_transform(dfS['Heating'])
+
+dfS[['HeatingQC','Heating']].corr()
+df.HeatingQC.value_counts()
+df.Heating.value_counts()
+
+# %%
+
+df.loc[df.Functional=='Maj2']
+dfS.loc[dfS.Functional==3]
+dfS['Kitchen*Quality']=dfS.KitchenAbvGr*dfS.KitchenQual
+
+functional_dic = {'Typ':8, 'Min1':7,'Min2': 6,'Mod':5, 'Maj1':4,'Maj2':3,'Sev':2,'Sal':1}
+dfS['Functional'] = dfS.loc[:,'Functional'].map(lambda x: functional_dic.get(x, 0))
+
 # %% Missingness
 dfS.dtypes
 dfS=dfS.dropna(subset=['Electrical'])
@@ -89,15 +114,37 @@ dfS.Functional.unique()
 dfS.loc[dfS.Functional.isnull()]
 miss.columns
 
-# %% Plotting variables
+# %% Feature engineering:
+dfS['Kitchen*Quality']=dfS.KitchenAbvGr*dfS.KitchenQual
+dfS['Fireplace*Quality']=dfS['FireplaceQu']*dfS['Fireplaces']
+# dfS=dfS.drop(['Fireplaces','FireplaceQu','KitchenQual','KitchenAbvGr'],axis=1)
+# %% Histograms for normalcy:
+dfS.columns
+dfS.BedroomAbvGr.unique()
+plt.hist(dfS['BedroomAbvGr'])
+
+# %% Scatterplots & Boxplots
 import matplotlib.pyplot as plt
 
-
 def sctplot(x,i):
-    print(str(num_colnames[i]))
     plt.scatter(x,dfS['SalePrice'])
     plt.title('SalePrice vs ' + str(num_colnames[i]))
     return plt.show()
 
 num_colnames=dfS.describe().columns[1:-1]
 [sctplot(dfS[num_colnames[i]],i) for i in range(0,len(num_colnames))]
+
+dfS.LowQualFinSF.value_counts()
+1434/1460
+
+plt.scatter(dfS['1stFlSF'],dfS['SalePrice'])
+plt.title('SalePrice vs 1stFlrSF')
+plt.show()
+
+plt.scatter(dfS['FireplaceQu']*dfS['Fireplaces'],dfS['SalePrice'])
+plt.title('SalePrice vs Fireplaces*Quality')
+plt.show()
+
+plt.scatter(dfS['KitchenQual']*dfS['KitchenAbvGr'],dfS['SalePrice'])
+plt.title('SalePrice vs Kitchen*Quality')
+plt.show()
