@@ -17,6 +17,10 @@ house.all.shape
 house.all.head()
 house.all.dtypes
 
+
+
+
+
 house.test().shape
 house.train().shape
 
@@ -37,6 +41,11 @@ columns_to_convert = [  ('MSSubClass', 'object'), ('LotArea', 'float64' ), ('Ove
                         ('MiscVal', 'float64'), ('LowQualFinSF', 'float64'), ('GrLivArea', 'float64'), ]
 
 house.convert_types(columns_to_convert)
+
+
+
+for category in [x for x in house.all.columns if house.all[x].dtype == 'object']:
+    print("Category " + category + " has n unique values " + str(house.all[category].nunique() / house.all.shape[0] * 100) + "%" )
 
 house.distribution_charts()
 

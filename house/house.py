@@ -87,6 +87,7 @@ class House():
             print(pd.DataFrame(np.sum(self.all[col_missing].isnull())))
             print(np.sum(self.all[col_missing].isnull())*100/self.all[col_missing].shape[0])
 
+
     def distribution_charts(self):
         for column in self.all.columns:
             if self.all[column].dtype in ['object', 'int64']:
@@ -97,6 +98,7 @@ class House():
                 plt.figure(figsize=(10,5))
                 sns.distplot(self.all[column][self.all[column]>0])
                 plt.title(column)
+
 
     def relation_stats(self, x, y, z):
         # x vs y scatter
@@ -125,8 +127,6 @@ class House():
         columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
         columns_with_missing_data.remove('SalePrice')
 
-
-
         for column in columns_with_missing_data:
             col_data = self.all[column]
             print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
@@ -147,10 +147,12 @@ class House():
             else:
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
 
+
     def convert_types(self, columns_to_convert):
         for column, type in columns_to_convert:
             print("assigning " + column + " as type " + type)
             self.all[column] = self.all[column].astype(type)
+
 
     def engineer_features(self):
         # General Dummification
@@ -166,10 +168,10 @@ class House():
         # TBD: do something with ordinals!!!!!
 
 
-
     def rmse_cv(self,model, x, y, k=5):
         rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_error", cv = k))
         return(np.mean(rmse))
+
 
     def statsmodel_linear_regression(self,y=['SalePrice'], X=['GrLivArea']):
         x = sm.add_constant(self.train()[X])
@@ -187,6 +189,7 @@ class House():
         except:
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+
 
     def sk_random_forest(self,num_est=500):
         self.test_train_split()
