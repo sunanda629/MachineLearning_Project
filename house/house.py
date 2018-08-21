@@ -248,7 +248,7 @@ class House():
 
 
     def test_train_split(self):
-        x=self.dummy_train
+        x=self.dummy_train.drop('SalePrice', axis=1)
         y=self.train().SalePrice
         try:
             self.x_train

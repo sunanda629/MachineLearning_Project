@@ -63,5 +63,4 @@ house.sk_random_forest(500)
 
 house.engineer_features(HOUSE_CONFIG)
 
-
 house.sk_random_forest(1000)
