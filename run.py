@@ -1,15 +1,19 @@
 
 ## Data loading
 # %%
-%load_ext autoreload
+%reload_ext autoreload
 %autoreload 2
 
 from house import *
+from config import *
 del house
 house = House('data/train.csv','data/test.csv')
 # %%
 
-
+<<<<<<< Updated upstream
+=======
+house.testmethod()
+>>>>>>> upstream/master
 
 ##EDA:
 #All variables:
@@ -55,7 +59,9 @@ house.distribution_charts()
 ##Feature Engeneneering:
 house.engineer_features()
 
-
-
-
 house.sk_random_forest(500)
+
+house.engineer_features(HOUSE_CONFIG)
+
+
+house.sk_random_forest(1000)
