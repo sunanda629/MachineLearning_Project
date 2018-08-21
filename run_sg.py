@@ -33,22 +33,25 @@ house.convert_types(columns_to_convert)
 house.distribution_charts()
 
 # now check skewness and inspect distribution charts again
-house.sg_skewness2()
-
+house.sg_skewness(mut=0)
 for var in house.skewed_features:
     house.log_transform(house.train()[var])
 
-
-house.distribution_charts()
-
+##Feature Engeneneering:
+house.engineer_features()
+# creates ordinals and then label_df with label encoded categories
 house.sg_ordinals()
 house.label_encode_engineer()
 # house.label_df.sample(10)
 
-##Feature Engeneneering:
-house.engineer_features()
+house.sg_random_forest(500,'dummy')
 
+house.sg_random_forest(500,'label_df')
 
-house.sk_random_forest(500)
+#### Now log transform the skewed variables and compare the Random Forest:
+house.sg_skewness(mut=1) # will perform the log_transform
 
-house.sg_ord_random_forest(500)
+house.sg_random_forest(500,'dummy')
+
+house.sg_random_forest(500,'label_df')
+# house.simple_model()

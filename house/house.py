@@ -151,15 +151,15 @@ class House():
             else:
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
 
-    def sg_clean(self):
-        columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
-        columns_with_missing_data.remove('SalePrice')
-
-        for column in columns_with_missing_data:
-            if column=='Functional':
-                self.all[column].fillna('Typ',inplace=True)
-            elif column=='SaleType':
-                self.all[column].fillna('WD',inplace=True)
+    # def sg_clean(self):
+    #     columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
+    #     columns_with_missing_data.remove('SalePrice')
+    #
+    #     for column in columns_with_missing_data:
+    #         if column=='Functional':
+    #             self.all[column].fillna('Typ',inplace=True)
+    #         elif column=='SaleType':
+    #             self.all[column].fillna('WD',inplace=True)
 
     def convert_types(self, columns_to_convert):
         for column, type in columns_to_convert:
@@ -236,28 +236,18 @@ class House():
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
 
-    def sg_skewness(self):
-        skew_tmp= self.train().select_dtypes(exclude = ["object"])
-        skewness = skew_tmp.apply(lambda x: skew(x))
-        skewness = skewness[abs(skewness) > 0.5]
-        print(str(skewness.shape[0]) + " skewed numerical features to log transform")
-        skewed_features = skewness.index
-        skew_tmp[skewed_features] = np.log1p(skew_tmp[skewed_features])
-        self.skewed_features=skewness.index
-        print(skewed_features)
-
-    def sg_skewness2(self):
-        # skew_tmp= self.train().select_dtypes(exclude = ["object"])
+    def sg_skewness(self,mut=0): # mut=0 will not log transform, mut =1 will
         skewness = self.train().select_dtypes(exclude = ["object"]).apply(lambda x: skew(x))
         skewness = skewness[abs(skewness) > 0.5]
         print(str(skewness.shape[0]) + " skewed numerical features to log transform")
         skewed_features = skewness.index
-        self.train()[skewed_features] = np.log1p(self.train()[skewed_features])
+        if mut==1:
+            self.train()[skewed_features] = np.log1p(self.train()[skewed_features])
         self.skewed_features=skewness.index
         print(skewed_features)
 
-    def sg_ord_random_forest(self,num_est=500):
-        self.sg_test_train_split(data_type='label_df')
+    def sg_random_forest(self,num_est=500,data_type='dummy'):
+        self.sg_test_train_split(data_type=data_type)
 
         model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
         model_rf.fit(self.x_train, self.y_train)
@@ -297,3 +287,13 @@ class House():
         rf_pred_log = model_rf.predict(self.x_test)
 
         print(self.rmse_cv(model_rf, self.x_train, self.y_train))
+
+#Statsmodels is a Python package that provides the complement to scipy for statistical
+#computations including descriptive statistics and estimation of statistical models.
+#It emplasizes parameter estimation and (statistical) testing. Here we only give you one example.
+    def simple_model(self):
+        self.sg_test_train_split(data_type='label_df')
+# have to convert this to Numpy Array instead
+        model = sm.OLS(self.y_train,self.x_train)
+        results = model.fit()
+        print(results.summary())
