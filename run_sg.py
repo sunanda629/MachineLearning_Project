@@ -1,42 +1,26 @@
 
 ## Data loading
 # %%
-%reload_ext autoreload
+%load_ext autoreload
 %autoreload 2
 
 from house import *
-from config import *
 del house
 house = House('data/train.csv','data/test.csv')
 # %%
 
-<<<<<<< Updated upstream
-=======
-house.testmethod()
->>>>>>> upstream/master
+
 
 ##EDA:
-#All variables:
-house.all.shape
-house.all.head()
-house.all.dtypes
-
-house.test().shape
-house.train().shape
-
 
 #Response varriable:
 house.train().SalePrice.describe()
 house.log_transform(house.train().SalePrice)
-house.corr_matrix(house.train(), 'SalePrice')
+# house.corr_matrix(house.train(), 'SalePrice')
 
 #Missing values:
-house.missing_stats()
+#house.missing_stats()
 house.clean()
-
-house.sg_ordinals()
-house.label_encode_engineer()
-house.label_df.sample(10)
 
 columns_to_convert = [  ('MSSubClass', 'object'), ('LotArea', 'float64' ), ('OverallQual', 'object'),
                         ('OverallCond', 'object'), ('1stFlrSF', 'float64'), ('2ndFlrSF', 'float64'),
@@ -46,22 +30,28 @@ columns_to_convert = [  ('MSSubClass', 'object'), ('LotArea', 'float64' ), ('Ove
 
 house.convert_types(columns_to_convert)
 
-
-
-for category in [x for x in house.all.columns if house.all[x].dtype == 'object']:
-    print("Category " + category + " has n unique values " + str(house.all[category].nunique() / house.all.shape[0] * 100) + "%" )
-
 house.distribution_charts()
 
-# Understand the Lot Frontage/Area/Config relationship
-#house.relation_stats('LotFrontage', 'LotArea', 'LotConfig')
+# now check skewness and inspect distribution charts again
+house.sg_skewness(mut=0)
+for var in house.skewed_features:
+    house.log_transform(house.train()[var])
 
 ##Feature Engeneneering:
 house.engineer_features()
+# creates ordinals and then label_df with label encoded categories
+house.sg_ordinals()
+house.label_encode_engineer()
+# house.label_df.sample(10)
 
-house.sk_random_forest(500)
+house.sg_random_forest(500,'dummy')
 
-house.engineer_features(HOUSE_CONFIG)
+house.sg_random_forest(500,'label_df')
 
+#### Now log transform the skewed variables and compare the Random Forest:
+house.sg_skewness(mut=1) # will perform the log_transform
 
-house.sk_random_forest(1000)
+house.sg_random_forest(500,'dummy')
+
+house.sg_random_forest(500,'label_df')
+# house.simple_model()

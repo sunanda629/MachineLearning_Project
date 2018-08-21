@@ -4,11 +4,15 @@ import seaborn as sns
 
 import matplotlib.pyplot as plt
 
+#Sophie's additions
+from LabelClass import LabelCountEncoder
+from scipy.stats import skew
+
 from statsmodels.formula.api import ols
 import statsmodels.api as sm
 from  statsmodels.genmod import generalized_linear_model
 
-#import missingno as msno
+import missingno as msno
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
@@ -194,40 +198,44 @@ class House():
             self.all[column] = self.all[column].astype(type)
 
 
-    def engineer_features(self, house_config):
+
+    def engineer_features(self):
         # General Dummification
         categorical_columns = [x for x in self.train().columns if self.train()[x].dtype == 'object' ]
         non_categorical_columns = [x for x in self.train().columns if self.train()[x].dtype != 'object' ]
+        ordinal_columns=['LotShape', 'Condition1', 'Condition2', 'OverallQual', 'OverallCond']
 
-        # TBD: do something with ordinals!!!!!
-        for column in categorical_columns:
-            for member_name, member_dict in house_config[column]['members'].items():
-                if member_dict['ordinal'] != 0:
-                    print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
-                    self.all[column].replace(member_name, member_dict['ordinal'], inplace=True)
+        dummy_columns = [ x for x in categorical_columns if x not in ordinal_columns]
+        use_columns = dummy_columns + non_categorical_columns
 
-            #print( "Column " + column + " now has these unique values " + ' '.join(self.all[column].unique()))
-
-        use_columns = non_categorical_columns + non_categorical_columns
         self.dummy_train = pd.get_dummies(self.train()[use_columns], drop_first=True, dummy_na=True)
 
-    def sale_price_charts(self):
-        for i, column in enumerate(self.all.columns):
-            plt.figure(i)
-            if column == 'SalePrice':
-                pass
-            elif self.all[column].dtype == 'float64':
-                data = pd.concat([self.all['SalePrice'], self.all[column]], axis=1)
-                data.plot.scatter(x=column, y='SalePrice', ylim=(0,800000))
-            else:
-                var = column
-                data = pd.concat([self.all['SalePrice'], self.all[var]], axis=1)
-                f, ax = plt.subplots(figsize=(16, 8))
-                fig = sns.boxplot(x=var, y="SalePrice", data=data)
-                fig.axis(ymin=0, ymax=800000)
+        # TBD: do something with ordinals!!!!!
+    def sg_ordinals(self):
+        # general ordinal columns
+        self.ord_df=self.train().copy()
+        ord_cols = ['ExterQual', 'ExterCond','BsmtCond','HeatingQC', 'KitchenQual',
+                   'FireplaceQu', 'GarageQual', 'GarageCond', 'PoolQC']
+        ord_dic = {'Ex': 5, 'Gd': 4, 'TA': 3, 'Fa':2, 'Po':1}
+        for col in ord_cols:
+            self.ord_df[col] = self.ord_df[col].map(lambda x: ord_dic.get(x, 0))
+        functional_dic = {'Typ':8, 'Min1':7,'Min2': 6,'Mod':5, 'Maj1':4,'Maj2':3,'Sev':2,'Sal':1}
+        self.ord_df['Functional'] = self.ord_df['Functional'].map(lambda x: functional_dic.get(x, 0))
+        GarageFinish = {'Fin': 1, 'RFn': 2, 'Unf': 3, 'None':4}
+        self.ord_df['GarageFinish'] = self.ord_df['GarageFinish'].map(lambda x: GarageFinish.get(x, 0))
+
+    def label_encode_engineer(self):
+        # must be called AFTER sg_ordinals
+        lce = LabelCountEncoder()
+        self.label_df = self.ord_df.copy()
+
+        for c in self.train().columns:
+            if self.label_df[c].dtype == 'object':
+                lce = LabelCountEncoder()
+                self.label_df[c] = lce.fit_transform(self.label_df[c])
 
     def rmse_cv(self,model, x, y, k=5):
-        rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_log_error", cv = k))
+        rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_error", cv = k))
         return(np.mean(rmse))
 
 
@@ -248,6 +256,48 @@ class House():
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
 
+    def sg_test_train_split(self,data_type):
+        if data_type=="label_df":
+            x=self.label_df
+        elif data_type=='dummy':
+            x=self.dummy_train
+        y=self.train().SalePrice
+        try:
+            self.x_train
+        except:
+            print('DOING SPLITS!!!!')
+            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+
+    def sg_skewness(self,mut=0): # mut=0 will not log transform, mut =1 will
+        skewness = self.train().select_dtypes(exclude = ["object"]).apply(lambda x: skew(x))
+        skewness = skewness[abs(skewness) > 0.5]
+        print(str(skewness.shape[0]) + " skewed numerical features to log transform")
+        skewed_features = skewness.index
+        if mut==1:
+            self.train()[skewed_features] = np.log1p(self.train()[skewed_features])
+        self.skewed_features=skewness.index
+        print(skewed_features)
+
+    def sg_random_forest(self,num_est=500,data_type='dummy'):
+        self.sg_test_train_split(data_type=data_type)
+
+        model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred = model_rf.predict(self.x_test)
+
+        plt.figure(figsize=(10, 5))
+        plt.scatter(self.y_test, rf_pred, s=20)
+        plt.title('Predicted vs. Actual')
+        plt.xlabel('Actual Sale Price')
+        plt.ylabel('Predicted Sale Price')
+
+        plt.plot([min(self.y_test), max(self.y_test)], [min(self.y_test), max(self.y_test)])
+        plt.tight_layout()
+
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred_log = model_rf.predict(self.x_test)
+
+        print(self.rmse_cv(model_rf, self.x_train, self.y_train))
 
     def sk_random_forest(self,num_est=500):
         self.test_train_split()
@@ -269,3 +319,13 @@ class House():
         rf_pred_log = model_rf.predict(self.x_test)
 
         print(self.rmse_cv(model_rf, self.x_train, self.y_train))
+
+#Statsmodels is a Python package that provides the complement to scipy for statistical
+#computations including descriptive statistics and estimation of statistical models.
+#It emplasizes parameter estimation and (statistical) testing. Here we only give you one example.
+    def simple_model(self):
+        self.sg_test_train_split(data_type='label_df')
+# have to convert this to Numpy Array instead
+        model = sm.OLS(self.y_train,self.x_train)
+        results = model.fit()
+        print(results.summary())
