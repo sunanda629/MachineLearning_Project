@@ -4,7 +4,9 @@ import seaborn as sns
 
 import matplotlib.pyplot as plt
 
+#Sophie's additions
 from LabelClass import LabelCountEncoder
+from scipy.stats import skew
 
 from statsmodels.formula.api import ols
 import statsmodels.api as sm
@@ -233,6 +235,16 @@ class House():
         except:
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+
+    def sg_skewness(self):
+        skew_tmp= self.train().select_dtypes(exclude = ["object"])
+        skewness = skew_tmp.apply(lambda x: skew(x))
+        skewness = skewness[abs(skewness) > 0.5]
+        print(str(skewness.shape[0]) + " skewed numerical features to log transform")
+        skewed_features = skewness.index
+        skew_tmp[skewed_features] = np.log1p(skew_tmp[skewed_features])
+        self.skewed_features=skewness.index
+        print(skewed_features)
 
     def sg_ord_random_forest(self,num_est=500):
         self.sg_test_train_split(data_type='label_df')
