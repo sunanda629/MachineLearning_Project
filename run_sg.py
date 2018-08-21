@@ -33,18 +33,17 @@ house.convert_types(columns_to_convert)
 house.distribution_charts()
 
 # now check skewness and inspect distribution charts again
-house.sg_skewness()
+house.sg_skewness2()
 
 for var in house.skewed_features:
     house.log_transform(house.train()[var])
-house.log_transform(house.train()['1stFlrSF'])
+
 
 house.distribution_charts()
 
 house.sg_ordinals()
 house.label_encode_engineer()
 # house.label_df.sample(10)
-
 
 ##Feature Engeneneering:
 house.engineer_features()

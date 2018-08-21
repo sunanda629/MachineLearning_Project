@@ -246,6 +246,16 @@ class House():
         self.skewed_features=skewness.index
         print(skewed_features)
 
+    def sg_skewness2(self):
+        # skew_tmp= self.train().select_dtypes(exclude = ["object"])
+        skewness = self.train().select_dtypes(exclude = ["object"]).apply(lambda x: skew(x))
+        skewness = skewness[abs(skewness) > 0.5]
+        print(str(skewness.shape[0]) + " skewed numerical features to log transform")
+        skewed_features = skewness.index
+        self.train()[skewed_features] = np.log1p(self.train()[skewed_features])
+        self.skewed_features=skewness.index
+        print(skewed_features)
+
     def sg_ord_random_forest(self,num_est=500):
         self.sg_test_train_split(data_type='label_df')
 

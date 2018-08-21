@@ -30,5 +30,17 @@ train['HasPorch'] = train['OpenPorchSF'].apply(lambda x: 1 if x > 0 else 0)
 train['HasPool'] = train['PoolArea'].apply(lambda x: 1 if x > 0 else 0)
 train['IsNew'] = train['YearBuilt'].apply(lambda x: 1 if x > 2000 else 0)
 
+# %%
+
+ENSTest = linear_model.ElasticNetCV(alphas=[0.0001, 0.0005, 0.001, 0.01, 0.1, 1, 10], l1_ratio=[.01, .1, .5, .9, .99], max_iter=5000).fit(x_train_st, y_train_st)
+train_test(ENSTest, x_train_st, x_test_st, y_train_st, y_test_st)
+
+# Average R2 score and standart deviation of 5-fold cross-validation
+scores = cross_val_score(ENSTest, train_features_st, train_labels, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+
 # %% Skewness
 from scipy.stats import skew
+
+skewness = train_num.apply(lambda x: skew(x))
