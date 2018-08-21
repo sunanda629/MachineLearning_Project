@@ -149,6 +149,45 @@ class House():
     def testmethod(self):
         print("this is a test")
 
+    def cleanRP(self):
+        NoneOrZero=['BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1',
+                'BsmtFinType2','BsmtFinSF1','BsmtFinSF2','Alley',
+               'Fence','GarageType','GarageQual',
+               'GarageCond','GarageFinish','GarageCars',
+                'GarageArea','MasVnrArea','MasVnrType','MiscFeature','PoolQC',
+                'BsmtFullBath', 'BsmtHalfBath', 'BsmtUnfSF']
+        mode=['Electrical','Exterior1st','Exterior2nd','FireplaceQu','Functional','KitchenQual','MSZoning','SaleType','Utilities']
+        mean=['TotalBsmtSF']
+        columns_with_missing_data=[name for name in self.all.columns if np.sum(self.all[name].isnull()) !=0]
+        columns_with_missing_data.remove('SalePrice')
+        for column in columns_with_missing_data:
+            col_data = self.all[column]
+            print( 'Cleaning ' + str(np.sum(col_data.isnull())) + ' data entries for column: ' + column )
+
+        #log transformation for missing LotFrontage
+            if  column=='LotFrontage':
+                y1=np.log(self.all['LotArea'])
+                index=self.all[self.all['LotFrontage'].isnull()].index
+                self.all.loc[self.all['LotFrontage'].isnull(),'LotFrontage'] = y1.loc[index]
+            #imputing the value of YearBuiltto the GarageYrBlt.
+            elif  column=='GarageYrBlt':
+                missing_grage_yr=self.all[self.all['GarageYrBlt'].isnull()].index
+                self.all.loc[self.all['GarageYrBlt'].isnull(),'GarageYrBlt'] = self.all['YearBuilt'].loc[missing_grage_yr]
+
+            elif column in mode:
+                self.all[column] = [self.all[column].mode() if pd.isnull(x) else x for x in self.all[column]]
+            elif column in mean:
+                self.all[column].fillna(self.all[column].mean(),inplace=True)
+            elif column in NoneOrZero:
+                if col_data.dtype == 'object':
+                    no_string = 'None'
+                    self.all[column] = [ no_string if pd.isnull(x) else x for x in self.all[column]]
+                else:
+                    self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
+            else:
+                print( 'Uh oh!!! No cleaning strategy for:' + column )
+
+
     def convert_types(self, columns_to_convert):
         for column, type in columns_to_convert:
             print("assigning " + column + " as type " + type)
