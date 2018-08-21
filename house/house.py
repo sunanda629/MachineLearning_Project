@@ -186,7 +186,7 @@ class House():
                 fig.axis(ymin=0, ymax=800000)
 
     def rmse_cv(self,model, x, y, k=5):
-        rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_error", cv = k))
+        rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_log_error", cv = k))
         return(np.mean(rmse))
 
 

@@ -24,9 +24,9 @@ house.train().shape
 
 
 #Response varriable:
-house.train.SalePrice.describe()
-house.log_transform(house.train.SalePrice)
-house.corr_matrix(house.train, 'SalePrice')
+house.train().SalePrice.describe()
+house.log_transform(house.train().SalePrice)
+house.corr_matrix(house.train(), 'SalePrice')
 
 #Missing values:
 house.missing_stats()
