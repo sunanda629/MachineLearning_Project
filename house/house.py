@@ -142,8 +142,7 @@ class House():
             elif column in ['BsmtFinSF1','BsmtFinSF2','BsmtFullBath','BsmtHalfBath','BsmtUnfSF','TotalBsmtSF','GarageCars','GarageArea','MasVnrArea']:
                 self.all[column] = [ 0 if pd.isnull(x) else x for x in self.all[column]]
             elif col_data.dtype == 'object':
-                no_string = 'No' + column
-                self.all[column] = [ no_string if pd.isnull(x) else x for x in self.all[column]]
+                self.all[column] = [ "None" if pd.isnull(x) else x for x in self.all[column]]
             else:
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
 
@@ -154,19 +153,37 @@ class House():
             self.all[column] = self.all[column].astype(type)
 
 
-    def engineer_features(self):
+    def engineer_features(self, house_config):
         # General Dummification
         categorical_columns = [x for x in self.train().columns if self.train()[x].dtype == 'object' ]
         non_categorical_columns = [x for x in self.train().columns if self.train()[x].dtype != 'object' ]
-        ordinal_columns=['LotShape', 'Condition1', 'Condition2', 'OverallQual', 'OverallCond']
-
-        dummy_columns = [ x for x in categorical_columns if x not in ordinal_columns]
-        use_columns = dummy_columns + non_categorical_columns
-
-        self.dummy_train = pd.get_dummies(self.train()[use_columns], drop_first=True, dummy_na=True)
 
         # TBD: do something with ordinals!!!!!
+        for column in categorical_columns:
+            for member_name, member_dict in house_config[column]['members'].items():
+                if member_dict['ordinal'] != 0:
+                    print( "Replacing " + member_name + " with " + str(member_dict['ordinal']) + " in column " + column)
+                    self.all[column].replace(member_name, member_dict['ordinal'], inplace=True)
 
+            #print( "Column " + column + " now has these unique values " + ' '.join(self.all[column].unique()))
+
+        use_columns = non_categorical_columns + non_categorical_columns
+        self.dummy_train = pd.get_dummies(self.train()[use_columns], drop_first=True, dummy_na=True)
+
+    def sale_price_charts(self):
+        for i, column in enumerate(self.all.columns):
+            plt.figure(i)
+            if column == 'SalePrice':
+                pass
+            elif self.all[column].dtype == 'float64':
+                data = pd.concat([self.all['SalePrice'], self.all[column]], axis=1)
+                data.plot.scatter(x=column, y='SalePrice', ylim=(0,800000))
+            else:
+                var = column
+                data = pd.concat([self.all['SalePrice'], self.all[var]], axis=1)
+                f, ax = plt.subplots(figsize=(16, 8))
+                fig = sns.boxplot(x=var, y="SalePrice", data=data)
+                fig.axis(ymin=0, ymax=800000)
 
     def rmse_cv(self,model, x, y, k=5):
         rmse = np.sqrt(-cross_val_score(model, x, y, scoring="neg_mean_squared_error", cv = k))
