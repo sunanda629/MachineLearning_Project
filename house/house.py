@@ -222,6 +222,38 @@ class House():
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
 
+    def sg_test_train_split(self,data_type):
+        if data_type=="label_df":
+            x=self.label_df
+        elif data_type=='dummy':
+            x=self.dummy_train
+        y=self.train().SalePrice
+        try:
+            self.x_train
+        except:
+            print('DOING SPLITS!!!!')
+            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+
+    def sg_ord_random_forest(self,num_est=500):
+        self.sg_test_train_split(data_type='label_df')
+
+        model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred = model_rf.predict(self.x_test)
+
+        plt.figure(figsize=(10, 5))
+        plt.scatter(self.y_test, rf_pred, s=20)
+        plt.title('Predicted vs. Actual')
+        plt.xlabel('Actual Sale Price')
+        plt.ylabel('Predicted Sale Price')
+
+        plt.plot([min(self.y_test), max(self.y_test)], [min(self.y_test), max(self.y_test)])
+        plt.tight_layout()
+
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred_log = model_rf.predict(self.x_test)
+
+        print(self.rmse_cv(model_rf, self.x_train, self.y_train))
 
     def sk_random_forest(self,num_est=500):
         self.test_train_split()
