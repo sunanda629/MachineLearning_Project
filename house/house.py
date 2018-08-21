@@ -8,7 +8,7 @@ from statsmodels.formula.api import ols
 import statsmodels.api as sm
 from  statsmodels.genmod import generalized_linear_model
 
-import missingno as msno
+#import missingno as msno
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
@@ -146,6 +146,8 @@ class House():
             else:
                 print( 'Uh oh!!! No cleaning strategy for:' + column )
 
+    def testmethod(self):
+        print("this is a test")
 
     def convert_types(self, columns_to_convert):
         for column, type in columns_to_convert:
