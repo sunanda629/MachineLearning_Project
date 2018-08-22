@@ -3,15 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-.DS_Store
-
 # C extensions
 *.so
 
 #csv
 *.csv
-/all
-*.gz
+all/
+.gz
+.DS_Store
 
 # Distribution / packaging
 .Python
