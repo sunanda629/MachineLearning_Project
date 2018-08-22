@@ -256,12 +256,12 @@ class House():
             print('DOING SPLITS!!!!')
             self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
 
-    def sg_test_train_split(self,data_type):
+    def sg_test_train_split(self, data_type):
         if data_type=="label_df":
             x=self.label_df
         elif data_type=='dummy':
             x=self.dummy_train
-        y=self.train().SalePrice
+            y=self.train().SalePrice
         try:
             self.x_train
         except:
