@@ -4,6 +4,10 @@ import seaborn as sns
 
 import matplotlib.pyplot as plt
 
+#Sophie's additions
+from LabelClass import LabelCountEncoder
+from scipy.stats import skew
+
 from statsmodels.formula.api import ols
 import statsmodels.api as sm
 from  statsmodels.genmod import generalized_linear_model
@@ -210,6 +214,72 @@ class House():
 
         use_columns = non_categorical_columns + non_categorical_columns
         self.dummy_train = pd.get_dummies(self.train()[use_columns], drop_first=True, dummy_na=True)
+
+    def sg_ordinals(self):
+        # general ordinal columns
+        self.ord_df=self.train().copy()
+        ord_cols = ['ExterQual', 'ExterCond','BsmtCond','HeatingQC', 'KitchenQual',
+                   'FireplaceQu', 'GarageQual', 'GarageCond', 'PoolQC']
+        ord_dic = {'Ex': 5, 'Gd': 4, 'TA': 3, 'Fa':2, 'Po':1}
+        for col in ord_cols:
+            self.ord_df[col] = self.ord_df[col].map(lambda x: ord_dic.get(x, 0))
+        functional_dic = {'Typ':8, 'Min1':7,'Min2': 6,'Mod':5, 'Maj1':4,'Maj2':3,'Sev':2,'Sal':1}
+        self.ord_df['Functional'] = self.ord_df['Functional'].map(lambda x: functional_dic.get(x, 0))
+        GarageFinish = {'Fin': 1, 'RFn': 2, 'Unf': 3, 'None':4}
+        self.ord_df['GarageFinish'] = self.ord_df['GarageFinish'].map(lambda x: GarageFinish.get(x, 0))
+
+    def sg_test_train_split(self,data_type):
+        if data_type=="label_df":
+            x=self.label_df
+        elif data_type=='dummy':
+            x=self.dummy_train
+        y=self.train().SalePrice
+        try:
+            self.x_train
+        except:
+            print('DOING SPLITS!!!!')
+            self.x_train, self.x_test, self.y_train, self.y_test = train_test_split(x,y)
+
+    def sg_skewness(self,mut=0): # mut=0 will not log transform, mut =1 will
+        skewness = self.train().select_dtypes(exclude = ["object"]).apply(lambda x: skew(x))
+        skewness = skewness[abs(skewness) > 0.5]
+        print(str(skewness.shape[0]) + " skewed numerical features to log transform")
+        skewed_features = skewness.index
+        if mut==1:
+            self.train()[skewed_features] = np.log1p(self.train()[skewed_features])
+        self.skewed_features=skewness.index
+        print(skewed_features)
+
+    def sg_random_forest(self,num_est=500,data_type='dummy'):
+        self.sg_test_train_split(data_type=data_type)
+
+        model_rf = RandomForestRegressor(n_estimators=num_est, n_jobs=-1)
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred = model_rf.predict(self.x_test)
+
+        plt.figure(figsize=(10, 5))
+        plt.scatter(self.y_test, rf_pred, s=20)
+        plt.title('Predicted vs. Actual')
+        plt.xlabel('Actual Sale Price')
+        plt.ylabel('Predicted Sale Price')
+
+        plt.plot([min(self.y_test), max(self.y_test)], [min(self.y_test), max(self.y_test)])
+        plt.tight_layout()
+
+        model_rf.fit(self.x_train, self.y_train)
+        rf_pred_log = model_rf.predict(self.x_test)
+
+        print(self.rmse_cv(model_rf, self.x_train, self.y_train))
+
+    def label_encode_engineer(self):
+        # must be called AFTER sg_ordinals
+        lce = LabelCountEncoder()
+        self.label_df = self.ord_df.copy()
+
+        for c in self.train().columns:
+            if self.label_df[c].dtype == 'object':
+                lce = LabelCountEncoder()
+                self.label_df[c] = lce.fit_transform(self.label_df[c])
 
     def sale_price_charts(self):
         for i, column in enumerate(self.all.columns):
